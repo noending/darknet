@@ -19,6 +19,8 @@ wget https://pjreddie.com/media/files/yolov3.weights
 
 ```
 运行结果
-![]()
+![](/Users/noending/Desktop/Github/darknet/result/02.png)
+![](/Users/noending/Desktop/Github/darknet/result/01.png)
+
 
 
