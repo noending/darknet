@@ -19,10 +19,10 @@ wget https://pjreddie.com/media/files/yolov3.weights
 
 ```
 运行结果
-![](/Users/noending/Desktop/Github/darknet/result/02.png)
-![](/Users/noending/Desktop/Github/darknet/result/01.png)
+![](https://github.com/noending/darknet/blob/master/result/02.png)
+![](https://github.com/noending/darknet/blob/master/result/01.png)
 
-![](/Users/noending/Desktop/Github/darknet/result/predictions.png)
+![](https://github.com/noending/darknet/blob/master/result/predictions.png)
 
 你也可以在data文件夹里放任何你喜欢的图片 运行命令检测，结果会在主文件夹里生成新的带有标框的图片
 
