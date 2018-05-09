@@ -1,8 +1,8 @@
-#通过darknet玩转yolov3
+# 通过darknet玩转yolov3
 
 YOLO(you only look once)是一个非常快的实时物体检测的算法，这次我们通过darknet来快速识别定位图片中的物体。
 
-##用预先训练的模型检测
+## 用预先训练的模型检测
 通过预先训练的模型加YOLO算法，先git clone darknet：
 ```
 git clone https://github.com/pjreddie/darknet
