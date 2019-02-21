@@ -1,7 +1,7 @@
 GPU=1
 CUDNN=1
 OPENCV=1
-OPENMP=1
+OPENMP=0
 DEBUG=0
 LCM=1
 
@@ -9,15 +9,13 @@ ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_35,code=sm_35 \
       -gencode arch=compute_50,code=[sm_50,compute_50] \
       -gencode arch=compute_52,code=[sm_52,compute_52] \
-      -gencode arch=compute_60,code=sm_60 \
       -gencode arch=compute_61,code=[sm_61,compute_61] \
       -gencode arch=compute_62,code=[sm_62,compute_62] \
       -gencode arch=compute_70,code=[sm_70,compute_70] \
       -gencode arch=compute_72,code=[sm_72,compute_72]
-    #  -gencode arch=compute_75,code=[sm_75,compute_75]
-#      -gencode arch=compute_20,code=[sm_20,sm_21] \ This one is deprecated?
+#      -gencode arch=compute_20,code=[sm_20,sm_21] \ This one   deprecated?
 
-# This is what I use, uncomment if you know your arch and want to specify
+# This   what I use, uncomment if you know your arch and want to specify
 # ARCH= -gencode arch=compute_52,code=compute_52
 
 VPATH=./src/:./examples
@@ -72,7 +70,8 @@ OBJ+=convolutional_kernels.o deconvolutional_kernels.o activation_kernels.o im2c
 endif
 
 ifeq ($(LCM), 1)
-COMMON+= -I../lcm
+COMMON+= -Ilcm
+CFLAGS+= -DLCM
 LDFLAGS+= -llcm
 OBJ+=tpa_obu_lcm_obstacle_v.o
 endif
@@ -85,8 +84,8 @@ all: obj backup results $(SLIB) $(ALIB) $(EXEC)
 #all: obj  results $(SLIB) $(ALIB) $(EXEC)
 
 
-$(EXEC): $(EXECOBJ) $(ALIB)
-	$(CC) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(ALIB)
+$(EXEC): $(EXECOBJ) $(ALIB) worldVector.o
+	$(CXX) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(ALIB)
 
 $(ALIB): $(OBJS)
 	$(AR) $(ARFLAGS) $@ $^
@@ -100,6 +99,8 @@ $(OBJDIR)%.o: %.c $(DEPS)
 $(OBJDIR)%.o: %.cu $(DEPS)
 	$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
 
+worldVector.o: worldVector.cpp
+	$(CXX) $(COMMON) $(CFLAGS) -c $< -o $@
 obj:
 	mkdir -p obj
 backup:
