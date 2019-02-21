@@ -1,18 +1,45 @@
+/******************************************************************
+** File:image.c
+** Copyright (c) 2016-2018 Qin Yong.All rights reserved
+** Creator:Qin Yong
+** Start Data: 2018-07-01
+** End Data:2010-07-13
+** Description: functions for output detections, which are classification, probbility and distance
+** Version:1.2v
+** History： 1.line:233,add measure distance function: distance_to_camera;
+** 2.line:246,add function to measure numbers of obstancle and angles;
+** 3.line:293~306,447~454,send data to lcm, date:2018/7/25;
+** 4.add one more way to measure distance: distance_to_cameraW,date:2018/7/25;
+** 5.add comment 747,725
+** 6.add comment in line 760, for not shown pic predictions
+**-----------------------------------------------------------------------------*/
+
+
 #include "image.h"
 #include "utils.h"
 #include "blas.h"
 #include "cuda.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
+#include "worldVector.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
+#define pi 3.1415926
 
 int windows = 0;
 
 float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
+
+//float focalLength; //= w:475.93907,  H:474.26768 ;
+//float personHeight = 63.0;
+//float pixPersonHeight;
+//float personWidth = 14.9;
+//float pixPersonWidth;
+
 
 float get_color(int c, int x, int max)
 {
@@ -81,8 +108,8 @@ static float bilinear_interpolate(image im, float x, float y, int c)
     float dx = x - ix;
     float dy = y - iy;
 
-    float val = (1-dy) * (1-dx) * get_pixel_extend(im, ix, iy, c) + 
-        dy     * (1-dx) * get_pixel_extend(im, ix, iy+1, c) + 
+    float val = (1-dy) * (1-dx) * get_pixel_extend(im, ix, iy, c) +
+        dy     * (1-dx) * get_pixel_extend(im, ix, iy+1, c) +
         (1-dy) *   dx   * get_pixel_extend(im, ix+1, iy, c) +
         dy     *   dx   * get_pixel_extend(im, ix+1, iy+1, c);
     return val;
@@ -124,7 +151,7 @@ image tile_images(image a, image b, int dx)
     if(a.w == 0) return copy_image(b);
     image c = make_image(a.w + b.w + dx, (a.h > b.h) ? a.h : b.h, (a.c > b.c) ? a.c : b.c);
     fill_cpu(c.w*c.h*c.c, 1, c.data, 1);
-    embed_image(a, c, 0, 0); 
+    embed_image(a, c, 0, 0);
     composite_image(b, c, a.w + dx, 0);
     return c;
 }
@@ -207,6 +234,39 @@ void draw_box_width(image a, int x1, int y1, int x2, int y2, int w, float r, flo
     }
 }
 
+//line 235-256 aborded by me
+/* float distance_to_camera(float focalLength, float personHeight, float pixPersonHeight)
+{
+    float distance;
+    distance = ((focalLength * personHeight) / pixPersonHeight)* 0.0254;
+    return distance;
+}
+
+float distance_to_cameraW(float focalLength,float personWidth, float pixPersonWidth){
+    float distance;
+    distance = ((focalLength * personWidth)/ pixPersonWidth)* 0.0254;
+    return distance;
+} */
+// get the angle
+/* float get_angle(float dCentre_x, float d_bottom)
+{
+    float angle,val;
+    val = 180.0 / pi;
+    angle = atan2(dCentre_x, d_bottom ) *val;
+    return angle;
+
+} */
+
+float get_theta(float world_x, float world_y)
+{
+    float angle,val;
+    val = 180.0 / pi;
+    angle = atan2(world_x, world_y ) *val;
+    return angle;
+
+}
+
+
 void draw_bbox(image a, box bbox, int w, float r, float g, float b)
 {
     int left  = (bbox.x-bbox.w/2)*a.w;
@@ -220,6 +280,7 @@ void draw_bbox(image a, box bbox, int w, float r, float g, float b)
     }
 }
 
+// load the alphabet
 image **load_alphabet()
 {
     int i, j;
@@ -236,25 +297,135 @@ image **load_alphabet()
     return alphabets;
 }
 
+int total_obj = 0;
+
+
+// draw detectons of label class, probality and distance on the top left of bounding box
 void draw_detections(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes)
 {
     int i,j;
+    int n_obj = 0;
+
+    FILE *fp3 = NULL;
+    char buffs[50];
+    fp3 = fopen("data/lcm.txt","r");
+    fscanf(fp3, "%s", buffs);
+    //char buffs[50] = "udpm://239.255.76.63:17667?ttl=1";
+
+    // send the data to lcm
+    //lcm_t *lcm = lcm_create("udpm://239.255.76.63:17667?ttl=1");
+    lcm_t *lcm = lcm_create(buffs);
+    fclose(fp3); //fpclose..
+
+    if(!lcm)
+    {
+        printf("lcm create failed!\n");
+        //return 1;
+    }
+
+    tpa_obu_lcm_obstacle_v my_data = {
+        .timestamp = 0,
+        .nums = n_obj,
+
+    };
+
+    float dists[100];
+    float worldX[100];
+
+    readParams();  //读取相机内外参
 
     for(i = 0; i < num; ++i){
         char labelstr[4096] = {0};
         int class = -1;
+
+        box b = dets[i].bbox;
+        int top   = (b.y-b.h/2.)*im.h;
+        int bot   = (b.y+b.h/2.)*im.h;
+        int left  = (b.x-b.w/2.)*im.w;
+        int right = (b.x+b.w/2.)*im.w;
+
+        //int imageCentre_x = im.w/2;
+        int middle_x = (right + left)/2;  //objects box centre point of x; 物体标框的中心点x坐标
+        //int middle_y = (bot + top)/2;    // objects box centre point of y; 物体标框的中心点y坐标
+        //int d_bottom = im.h - middle_y;  // distance from objs box centre point to the frame's bottom 物体标框中心点到图片底部的距离y
+        //int d_bot_bottom = im.h - bot;  //distance from box bom to the frame's bottom 物体标框底部到图片底部的距离y’
+        //int dCentre_x = abs(imageCentre_x - middle_x); // obj's box distance from centre x to image centre points 物体标框中心点到图片中心点的距离x‘
+
+        //int c = sqrt(pow(d_bottom, 2)+pow(dCentre_x, 2));
+
+
         for(j = 0; j < classes; ++j){
+
+            float p = dets[i].prob[j]*100;  //是某一物体的概率
+/*          pixPersonHeight = bot-top;
+            pixPersonWidth = right-left;
+           float meter = distance_to_camera(474.26,personHeight,pixPersonHeight);   //W:389.93, H:391.26
+           float meter1 = distance_to_cameraW(475.93,personWidth,pixPersonWidth); // focalLength w:475.93907,  H:474.26768
+           float angle = get_angle(dCentre_x, d_bottom); */
+
+            // set uv to get world vector
+
+            float world_x, world_y;
+            //readParams();
+            uv2world(middle_x, bot, &world_x, &world_y);
+            //float theta = get_theta(world_x,world_y);
+
+            char distances[60];
+            //char str2[6];
+            // sprintf(str1," %.0f%%", p);
+            // // sprintf(str2," %.1fm",meter);
+            // if(meter > meter1){
+            //     sprintf(str2," %.1fm",meter1);
+            // }
+            // else{
+            //     sprintf(str2," %.1fm",meter);
+            // }
+            sprintf(distances,"%.1f m",world_y);
+
             if (dets[i].prob[j] > thresh){
+                n_obj++;
+                total_obj++;
+                worldX[n_obj] = world_x;
+                dists[n_obj] = world_y;
+               /*  if(meter > meter1){
+                    dists[n_obj] = meter1;
+                //angles[n_obj] = angle;
+                }else{
+                    dists[n_obj] = meter;
+                } */
+                // dists[n_obj] = str1;
                 if (class < 0) {
                     strcat(labelstr, names[j]);
+                    strcat(labelstr, distances);
+                    //strcat(labelstr, str2);
                     class = j;
                 } else {
                     strcat(labelstr, ", ");
                     strcat(labelstr, names[j]);
+                    strcat(labelstr, distances);
+                    //strcat(labelstr, str2);
+
                 }
+
                 printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
+                printf("概率：%f\n",p);
+                printf("top: %d, bot: %d, left: %d, right: %d\n",top, bot, left, right);
+                //printf("middle_x: %d, middle_y :%d\n",middle_x,middle_y);
+                //printf("bottle-middle_x:%d, b-middle_y :%d\n",middle_x,bot);
+                printf("distance: %.0fm\n", world_y);
+                printf("num of obj: %d\n ",n_obj);
+               // printf("angle:%.3f\n",angle);
+               // printf("theta: %.3f\n",theta);
+                printf("world_x: %f, world_y: %f\n",world_x, world_y);
+                printf("total detected: %d\n",total_obj);
+                printf("**************************\n");
+
+
             }
         }
+
+
+
         if(class >= 0){
             int width = im.h * .006;
 
@@ -290,10 +461,13 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
             if(top < 0) top = 0;
             if(bot > im.h-1) bot = im.h-1;
 
+
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
             if (alphabet) {
                 image label = get_label(alphabet, labelstr, (im.h*.03));
+                ///////draw label on the top left of image with rgb color/////
                 draw_label(im, top + width, left, label, rgb);
+                    //draw_label(im, top + width, right, label, rgb);
                 free_image(label);
             }
             if (dets[i].mask){
@@ -307,6 +481,21 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
             }
         }
     }
+    //printf("objs:%d\n",n_obj);
+    // for(int m =1; m < n_obj+1; m++){
+    //     //if(dists[m] >0 || angles[m]> 0){
+    //         printf("####dists:%.3f####\n", dists[m]);
+    //         printf("####angles:%.3f####\n", angles[m]);
+    //     //}
+    // }
+    my_data.timestamp = what_time_is_it_now();
+    my_data.nums = n_obj;
+    my_data.distance = dists+1;
+    my_data.worldx = worldX+1;
+    //if(n_obj !=0){
+    tpa_obu_lcm_obstacle_v_publish(lcm, "obstacle_v", &my_data);
+    //}
+    lcm_destroy(lcm);
 }
 
 void transpose_image(image im)
@@ -535,6 +724,7 @@ void rgbgr_image(image im)
 }
 
 #ifdef OPENCV
+
 void show_image_cv(image p, const char *name, IplImage *disp)
 {
     int x,y,k;
@@ -546,7 +736,7 @@ void show_image_cv(image p, const char *name, IplImage *disp)
     sprintf(buff, "%s", name);
 
     int step = disp->widthStep;
-    cvNamedWindow(buff, CV_WINDOW_NORMAL); 
+    cvNamedWindow(buff, CV_WINDOW_NORMAL);   // add by me
     //cvMoveWindow(buff, 100*(windows%10) + 200*(windows/10), 100*(windows%10));
     ++windows;
     for(y = 0; y < p.h; ++y){
@@ -568,8 +758,10 @@ void show_image_cv(image p, const char *name, IplImage *disp)
         cvResize(buffer, disp, CV_INTER_LINEAR);
         cvReleaseImage(&buffer);
     }
-    cvShowImage(buff, disp);
+    //cvShowImage(buff, 0);
+    cvShowImage(buff, disp);  //add 0 not shown image sence, black sence
 }
+
 #endif
 
 void show_image(image p, const char *name)
@@ -578,7 +770,7 @@ void show_image(image p, const char *name)
     IplImage *disp = cvCreateImage(cvSize(p.w,p.h), IPL_DEPTH_8U, p.c);
     image copy = copy_image(p);
     constrain_image(copy);
-    show_image_cv(copy, name, disp);
+    show_image_cv(copy, name, disp);  //add by me
     free_image(copy);
     cvReleaseImage(&disp);
 #else
@@ -791,7 +983,7 @@ void place_image(image im, int w, int h, int dx, int dy, image canvas)
 
 image center_crop_image(image im, int w, int h)
 {
-    int m = (im.w < im.h) ? im.w : im.h;   
+    int m = (im.w < im.h) ? im.w : im.h;
     image c = crop_image(im, (im.w - m) / 2, (im.h - m)/2, m, m);
     image r = resize_image(c, w, h);
     free_image(c);
@@ -953,7 +1145,7 @@ void letterbox_image_into(image im, int w, int h, image boxed)
         new_w = (im.w * h)/im.h;
     }
     image resized = resize_image(im, new_w, new_h);
-    embed_image(resized, boxed, (w-new_w)/2, (h-new_h)/2); 
+    embed_image(resized, boxed, (w-new_w)/2, (h-new_h)/2);
     free_image(resized);
 }
 
@@ -973,7 +1165,7 @@ image letterbox_image(image im, int w, int h)
     fill_image(boxed, .5);
     //int i;
     //for(i = 0; i < boxed.w*boxed.h*boxed.c; ++i) boxed.data[i] = 0;
-    embed_image(resized, boxed, (w-new_w)/2, (h-new_h)/2); 
+    embed_image(resized, boxed, (w-new_w)/2, (h-new_h)/2);
     free_image(resized);
     return boxed;
 }
@@ -1239,7 +1431,7 @@ image blend_image(image fore, image back, float alpha)
     for(k = 0; k < fore.c; ++k){
         for(j = 0; j < fore.h; ++j){
             for(i = 0; i < fore.w; ++i){
-                float val = alpha * get_pixel(fore, i, j, k) + 
+                float val = alpha * get_pixel(fore, i, j, k) +
                     (1 - alpha)* get_pixel(back, i, j, k);
                 set_pixel(blend, i, j, k, val);
             }
@@ -1346,7 +1538,7 @@ void saturate_exposure_image(image im, float sat, float exposure)
 
 image resize_image(image im, int w, int h)
 {
-    image resized = make_image(w, h, im.c);   
+    image resized = make_image(w, h, im.c);
     image part = make_image(w, im.h, im.c);
     int r, c, k;
     float w_scale = (float)(im.w - 1) / (w - 1);
@@ -1543,7 +1735,7 @@ image collapse_images_vert(image *ims, int n)
         free_image(copy);
     }
     return filters;
-} 
+}
 
 image collapse_images_horz(image *ims, int n)
 {
@@ -1579,7 +1771,7 @@ image collapse_images_horz(image *ims, int n)
         free_image(copy);
     }
     return filters;
-} 
+}
 
 void show_image_normalized(image im, const char *name)
 {

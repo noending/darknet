@@ -13,7 +13,7 @@
 
 
 /*
-// old timing. is it better? who knows!!
+// old timing.   it better? who knows!!
 double get_wall_time()
 {
     struct timeval time;
@@ -219,7 +219,7 @@ void find_replace(char *str, char *orig, char *rep, char *output)
     char *p;
 
     sprintf(buffer, "%s", str);
-    if(!(p = strstr(buffer, orig))){  // Is 'orig' even in 'str'?
+    if(!(p = strstr(buffer, orig))){  //   'orig' even in 'str'?
         sprintf(output, "%s", str);
         return;
     }

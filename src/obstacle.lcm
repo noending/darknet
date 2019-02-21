@@ -1,0 +1,9 @@
+package tpa_obu_lcm;
+
+struct obstacle_v
+{
+    int64_t timestamp;
+    int32_t nums;
+    float distance[nums];
+    float worldx[nums];
+}

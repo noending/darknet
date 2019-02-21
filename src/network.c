@@ -114,7 +114,7 @@ float get_current_rate(network *net)
         case SIG:
             return net->learning_rate * (1./(1.+exp(net->gamma*(batch_num - net->step))));
         default:
-            fprintf(stderr, "Policy is weird!\n");
+            fprintf(stderr, "Policy   weird!\n");
             return net->learning_rate;
     }
 }
@@ -730,7 +730,7 @@ void free_network(network *net)
 }
 
 // Some day...
-// ^ What the hell is this comment for?
+// ^ What the hell   this comment for?
 
 
 layer network_output_layer(network *net)

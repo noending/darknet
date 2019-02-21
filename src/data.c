@@ -1,3 +1,12 @@
+/******************************************************************
+** File:image.c
+** Copyright (c) 2016-2018 Qin Yong.All rights reserved
+** Creator:Qin Yong
+** Start Data: 2018-08-17
+** End Data:2010-08-17
+** line 1613,add function to read k matrix 
+**-----------------------------------------------------------------*/
+
 #include "data.h"
 #include "utils.h"
 #include "image.h"
@@ -1600,4 +1609,18 @@ data *split_data(data d, int part, int total)
     split[1] = test;
     return split;
 }
+
+// void get_k_matrix(){
+//     FILE *fp3 = NULL;
+//     fp3 = fopen("../data/k-matrix.txt", "r");
+
+//     int cap_width = 640;
+//     int cap_height = 480;
+//     double fx, fy, cx, cy;
+//     double k1, k2, p1, p2;
+//     fscanf(fp3,"%lf %lf %lf %lf %lf %lf %lf %lf",&fx,&fy,&cx,&cy,&k1,&k2,&p1,&p2);
+//     printf("%f %f %f %f %f %f %f %f",fx,fy,cx,cy,k1,k2,p1,p2);
+//     fclose(fp3);
+
+// }
 

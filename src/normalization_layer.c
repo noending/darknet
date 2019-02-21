@@ -96,7 +96,7 @@ void forward_normalization_layer(const layer layer, network net)
 
 void backward_normalization_layer(const layer layer, network net)
 {
-    // TODO This is approximate ;-)
+    // TODO This   approximate ;-)
     // Also this should add in to delta instead of overwritting.
 
     int w = layer.w;
@@ -140,7 +140,7 @@ void forward_normalization_layer_gpu(const layer layer, network net)
 
 void backward_normalization_layer_gpu(const layer layer, network net)
 {
-    // TODO This is approximate ;-)
+    // TODO This   approximate ;-)
 
     int w = layer.w;
     int h = layer.h;

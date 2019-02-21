@@ -9,6 +9,14 @@
 #include "box.h"
 #include "darknet.h"
 
+#include "utils.h"
+
+//#ifdef LCM
+#include <lcm/lcm.h>
+#include "tpa_obu_lcm_obstacle_v.h"
+//#endif
+
+
 #ifndef __cplusplus
 #ifdef OPENCV
 int fill_image_from_stream(CvCapture *cap, image im);

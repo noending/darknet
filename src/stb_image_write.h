@@ -17,13 +17,13 @@
 
 ABOUT:
 
-   This header file is a library for writing images to C stdio. It could be
+   This header file   a library for writing images to C stdio. It could be
    adapted to write to memory or a general streaming interface; let me know.
 
-   The PNG output is not optimal; it is 20-50% larger than the file
+   The PNG output   not optimal; it   20-50% larger than the file
    written by a decent optimizing implementation; though providing a custom
    zlib compress function (see STBIW_ZLIB_COMPRESS) can mitigate that.
-   This library is designed for source code compactness and simplicity,
+   This library   designed for source code compactness and simplicity,
    not optimal image file size or run-time performance.
 
 BUILDING:
@@ -48,7 +48,7 @@ USAGE:
      int stbi_write_jpg(char const *filename, int w, int h, int comp, const void *data, int quality);
      int stbi_write_hdr(char const *filename, int w, int h, int comp, const float *data);
 
-     void stbi_flip_vertically_on_write(int flag); // flag is non-zero to flip data vertically
+     void stbi_flip_vertically_on_write(int flag); // flag   non-zero to flip data vertically
 
    There are also five equivalent functions that use an arbitrary write function. You are
    expected to open/close your file-equivalent before and after calling these:
@@ -59,7 +59,7 @@ USAGE:
      int stbi_write_hdr_to_func(stbi_write_func *func, void *context, int w, int h, int comp, const float *data);
      int stbi_write_jpg_to_func(stbi_write_func *func, void *context, int x, int y, int comp, const void *data, int quality);
 
-   where the callback is:
+   where the callback  :
       void stbi_write_func(void *context, void *data, int size);
 
    You can configure it with these global variables:
@@ -75,12 +75,12 @@ USAGE:
    Each function returns 0 on failure and non-0 on success.
 
    The functions create an image file defined by the parameters. The image
-   is a rectangle of pixels stored from left-to-right, top-to-bottom.
+     a rectangle of pixels stored from left-to-right, top-to-bottom.
    Each pixel contains 'comp' channels of data stored interleaved with 8-bits
-   per channel, in the following order: 1=Y, 2=YA, 3=RGB, 4=RGBA. (Y is
-   monochrome color.) The rectangle is 'w' pixels wide and 'h' pixels tall.
+   per channel, in the following order: 1=Y, 2=YA, 3=RGB, 4=RGBA. (Y  
+   monochrome color.) The rectangle   'w' pixels wide and 'h' pixels tall.
    The *data pointer points to the first byte of the top-left-most pixel.
-   For PNG, "stride_in_bytes" is the distance in bytes from the first byte of
+   For PNG, "stride_in_bytes"   the distance in bytes from the first byte of
    a row of pixels to the first byte of the next row of pixels.
 
    PNG creates output files with the same number of components as the input.
@@ -91,20 +91,20 @@ USAGE:
    data are not consecutive in memory (e.g. sub-rectangles of a larger image),
    by supplying the stride between the beginning of adjacent rows. The other
    formats do not. (Thus you cannot write a native-format BMP through the BMP
-   writer, both because it is in BGR order and because it may have padding
+   writer, both because it   in BGR order and because it may have padding
    at the end of the line.)
 
    PNG allows you to set the deflate compression level by setting the global
    variable 'stbi_write_png_compression_level' (it defaults to 8).
 
-   HDR expects linear float data. Since the format is always 32-bit rgb(e)
-   data, alpha (if provided) is discarded, and for monochrome data it is
+   HDR expects linear float data. Since the format   always 32-bit rgb(e)
+   data, alpha (if provided)   discarded, and for monochrome data it  
    replicated across all three channels.
 
    TGA supports RLE or non-RLE compressed data. To use non-RLE-compressed
    data, set the global variable 'stbi_write_tga_with_rle' to 0.
    
-   JPEG does ignore alpha channels in input data; quality is between 1 and 100.
+   JPEG does ignore alpha channels in input data; quality   between 1 and 100.
    Higher quality looks better but results in a bigger image.
    JPEG baseline (no JPEG progressive).
 
@@ -356,7 +356,7 @@ static void stbiw__write_pixel(stbi__write_context *s, int rgb_dir, int comp, in
       s->func(s->context, &d[comp - 1], 1);
 
    switch (comp) {
-      case 2: // 2 pixels = mono + alpha, alpha is written separately, so same as 1-channel case
+      case 2: // 2 pixels = mono + alpha, alpha   written separately, so same as 1-channel case
       case 1:
          if (expand_mono)
             stbiw__write3(s, d[0], d[0], d[0]); // monochrome bmp
@@ -679,7 +679,7 @@ static int stbi_write_hdr_core(stbi__write_context *s, int x, int y, int comp, f
    if (y <= 0 || x <= 0 || data == NULL)
       return 0;
    else {
-      // Each component is stored separately. Allocate scratch space for full output scanline.
+      // Each component   stored separately. Allocate scratch space for full output scanline.
       unsigned char *scratch = (unsigned char *) STBIW_MALLOC(x*4);
       int i, len;
       char buffer[128];
@@ -848,7 +848,7 @@ unsigned char * stbi_zlib_compress(unsigned char *data, int data_len, int *out_l
             if (d >= best) best=d,bestloc=hlist[j];
          }
       }
-      // when hash table entry is too long, delete half the entries
+      // when hash table entry   too long, delete half the entries
       if (hash_table[h] && stbiw__sbn(hash_table[h]) == 2*quality) {
          STBIW_MEMMOVE(hash_table[h], hash_table[h]+quality, sizeof(hash_table[h][0])*quality);
          stbiw__sbn(hash_table[h]) = quality;
@@ -863,7 +863,7 @@ unsigned char * stbi_zlib_compress(unsigned char *data, int data_len, int *out_l
          for (j=0; j < n; ++j) {
             if (hlist[j]-data > i-32767) {
                int e = stbiw__zlib_countm(hlist[j], data+i+1, data_len-i-1);
-               if (e > best) { // if next match is better, bail on current match
+               if (e > best) { // if next match   better, bail on current match
                   bestloc = NULL;
                   break;
                }
@@ -1140,7 +1140,7 @@ STBIWDEF int stbi_write_png_to_func(stbi_write_func *func, void *context, int x,
  *
  * JPEG writer
  *
- * This is based on Jon Olick's jo_jpeg.cpp:
+ * This   based on Jon Olick's jo_jpeg.cpp:
  * public domain Simple, Minimalistic JPEG writer - http://www.jonolick.com/code.html
  */
 
@@ -1195,7 +1195,7 @@ static void stbiw__jpg_DCT(float *d0p, float *d1p, float *d2p, float *d3p, float
    tmp11 = tmp5 + tmp6;
    tmp12 = tmp6 + tmp7;
 
-   // The rotator is modified from fig 4-8 to avoid extra negations.
+   // The rotator   modified from fig 4-8 to avoid extra negations.
    z5 = (tmp10 - tmp12) * 0.382683433f; // c6
    z2 = tmp10 * 0.541196100f + z5; // c2-c6
    z4 = tmp12 * 1.306562965f + z5; // c2+c6
@@ -1416,7 +1416,7 @@ static int stbi_write_jpg_core(stbi__write_context *s, int width, int height, in
       const unsigned char *imageData = (const unsigned char *)data;
       int DCY=0, DCU=0, DCV=0;
       int bitBuf=0, bitCnt=0;
-      // comp == 2 is grey+alpha (alpha is ignored)
+      // comp == 2   grey+alpha (alpha   ignored)
       int ofsG = comp > 2 ? 1 : 0, ofsB = comp > 2 ? 2 : 0;
       int x, y, pos;
       for(y = 0; y < height; y += 8) {
@@ -1527,19 +1527,19 @@ STBIWDEF int stbi_write_jpg(char const *filename, int x, int y, int comp, const 
 
 /*
 ------------------------------------------------------------------------------
-This software is available under 2 licenses -- choose whichever you prefer.
+This software   available under 2 licenses -- choose whichever you prefer.
 ------------------------------------------------------------------------------
 ALTERNATIVE A - MIT License
 Copyright (c) 2017 Sean Barrett
-Permission is hereby granted, free of charge, to any person obtaining a copy of 
+Permission   hereby granted, free of charge, to any person obtaining a copy of 
 this software and associated documentation files (the "Software"), to deal in 
 the Software without restriction, including without limitation the rights to 
 use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies 
-of the Software, and to permit persons to whom the Software is furnished to do 
+of the Software, and to permit persons to whom the Software   furnished to do 
 so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all 
 copies or substantial portions of the Software.
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+THE SOFTWARE   PROVIDED "AS  ", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
@@ -1548,8 +1548,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ------------------------------------------------------------------------------
 ALTERNATIVE B - Public Domain (www.unlicense.org)
-This is free and unencumbered software released into the public domain.
-Anyone is free to copy, modify, publish, use, compile, sell, or distribute this 
+This   free and unencumbered software released into the public domain.
+Anyone   free to copy, modify, publish, use, compile, sell, or distribute this 
 software, either in source code form or as a compiled binary, for any purpose, 
 commercial or non-commercial, and by any means.
 In jurisdictions that recognize copyright laws, the author or authors of this 
@@ -1558,7 +1558,7 @@ domain. We make this dedication for the benefit of the public at large and to
 the detriment of our heirs and successors. We intend this dedication to be an 
 overt act of relinquishment in perpetuity of all present and future rights to 
 this software under copyright law.
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+THE SOFTWARE   PROVIDED "AS  ", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
 AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN 
