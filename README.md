@@ -34,7 +34,7 @@ wget https://pjreddie.com/media/files/yolov3.weights
 然后在命令行提示输入图片路径，在输入图片路径，你可以多说输入图片路径，直到按Ctrl-C退出
 
 ### 实时检测
-Nvidia 1080和2080在40fps左右，通过后缀-c 0，1 来选择摄像头或者加视频路径，检测视频
+Nvidia GTX 1080和RTX 2080在30-40fps左右，通过后缀-c 0，1 来选择摄像头或者加视频路径，检测视频
 ```
 ./darknet detector demo cfg/coco.data cfg/yolov3.cfg yolov3.weights
 ```
